@@ -1,0 +1,946 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZapOrça Pro — Engenharia de Propostas & Gestão Comercial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #060608;
+            --bg-surface: #0e0e12;
+            --bg-elevated: #16161c;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(16, 185, 129, 0.35);
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-canvas);
+            color: #f4f4f5;
+            -webkit-font-smoothing: antialiased;
+            background-image: 
+                radial-gradient(at 50% 0%, rgba(16, 185, 129, 0.07) 0px, transparent 55%),
+                radial-gradient(at 100% 100%, rgba(255, 255, 255, 0.02) 0px, transparent 50%);
+        }
+        .font-mono-tabular {
+            font-family: 'JetBrains Mono', monospace;
+            font-variant-numeric: tabular-nums;
+        }
+        .glass-panel {
+            background: linear-gradient(180deg, rgba(22, 22, 28, 0.85) 0%, rgba(14, 14, 18, 0.96) 100%);
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(16px);
+        }
+        .input-pro {
+            background-color: #09090c;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .input-pro:focus {
+            border-color: #10b981;
+            background-color: #0c0c10;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+        }
+        .btn-emerald {
+            background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .btn-emerald:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+        .btn-emerald:active {
+            transform: translateY(0);
+        }
+        .grid-pattern {
+            background-size: 32px 32px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        }
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-enter {
+            animation: fadeSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #printable-area, #printable-area * { visibility: visible; }
+            #printable-area {
+                position: fixed; left: 0; top: 0; width: 100%;
+                background: #ffffff !important; color: #09090b !important; padding: 32px !important;
+            }
+            .no-print { display: none !important; }
+        }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-emerald-500/30 selection:text-emerald-200 grid-pattern">
+
+    <!-- Toast Notificação Corporativa -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-[120] hidden bg-zinc-900/95 backdrop-blur-md border border-zinc-700/80 text-zinc-100 px-4 py-3 rounded-2xl shadow-2xl text-xs font-medium flex items-center gap-3 animate-enter">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
+        <span id="toast-msg">Operação concluída</span>
+    </div>
+
+    <!-- =========================================================
+         PORTAL DE ACESSO, CONVERSÃO E ASSINATURA (AUTH GATE)
+         ========================================================= -->
+    <div id="auth-gate" class="min-h-screen flex flex-col justify-between px-4 py-6 sm:py-10 relative">
+        
+        <!-- Topbar Minimalista de Marca -->
+        <div class="max-w-lg w-full mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-zinc-950 shadow-lg shadow-emerald-500/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <span class="font-extrabold text-base tracking-tight text-white">ZapOrça <span class="text-emerald-400 text-xs font-mono-tabular uppercase tracking-widest ml-0.5">Pro</span></span>
+            </div>
+            <div class="flex items-center gap-2 text-[11px] font-medium text-zinc-400 bg-zinc-900/80 border border-white/[0.06] px-3 py-1.5 rounded-full">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>SaaS v2.6</span>
+            </div>
+        </div>
+
+        <!-- Container Central Dinâmico -->
+        <div class="max-w-lg w-full mx-auto my-auto py-8">
+            
+            <!-- 1. TELA DE APRESENTAÇÃO EXECUTIVA -->
+            <div id="gate-welcome" class="animate-enter space-y-6">
+                <div class="space-y-3 text-center sm:text-left">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold tracking-wide">
+                        <span>SISTEMA DE PROPOSTAS COMERCIAIS</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-[1.15]">
+                        Feche o dobro de serviços com orçamentos de elite.
+                    </h1>
+                    <p class="text-sm text-zinc-400 leading-relaxed">
+                        Substitua mensagens amadoras por propostas estruturadas em PDF com sua identidade visual, cálculo automático de itens e cobrança via Pix integrada ao WhatsApp.
+                    </p>
+                </div>
+
+                <!-- Card de Proposta de Valor & Plano -->
+                <div class="glass-panel rounded-3xl p-6 space-y-5">
+                    <div class="flex items-center justify-between border-b border-white/[0.06] pb-4">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-widest text-emerald-400 block">Licença Profissional</span>
+                            <h2 class="text-lg font-bold text-white mt-0.5">Acesso Completo Ilimitado</h2>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] text-zinc-500 line-through block font-mono-tabular">R$ 49,90</span>
+                            <div class="text-2xl font-extrabold text-white font-mono-tabular">R$ 19,90<span class="text-xs font-normal text-zinc-400">/mês</span></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div class="flex items-start gap-2.5 bg-zinc-950/60 p-3 rounded-xl border border-white/[0.04]">
+                            <svg class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            <span class="text-zinc-300">PDF comercial timbrado pronto para download</span>
+                        </div>
+                        <div class="flex items-start gap-2.5 bg-zinc-950/60 p-3 rounded-xl border border-white/[0.04]">
+                            <svg class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            <span class="text-zinc-300">Envio formatado direto no WhatsApp do cliente</span>
+                        </div>
+                        <div class="flex items-start gap-2.5 bg-zinc-950/60 p-3 rounded-xl border border-white/[0.04]">
+                            <svg class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            <span class="text-zinc-300">Cálculo automático de materiais, taxas e descontos</span>
+                        </div>
+                        <div class="flex items-start gap-2.5 bg-zinc-950/60 p-3 rounded-xl border border-white/[0.04]">
+                            <svg class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            <span class="text-zinc-300">Histórico e controle financeiro de propostas</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2.5 pt-1">
+                        <button onclick="showAuthStep('register')" class="w-full btn-emerald text-zinc-950 font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2">
+                            <span>Criar Conta e Assinar Agora</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                        </button>
+                        <button onclick="showAuthStep('login')" class="w-full bg-zinc-900/90 hover:bg-zinc-800 border border-white/[0.08] text-zinc-300 font-semibold py-3.5 rounded-xl text-xs transition">
+                            Já sou assinante · Acessar Painel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Prova Social / Garantias -->
+                <div class="flex items-center justify-center gap-6 text-[11px] text-zinc-500">
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        Sem fidelidade
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Ativação imediata via Pix
+                    </span>
+                </div>
+            </div>
+
+            <!-- 2. TELA DE CADASTRO DE CONTA -->
+            <div id="gate-register" class="hidden glass-panel rounded-3xl p-6 sm:p-8 space-y-5 animate-enter">
+                <div class="flex items-center justify-between border-b border-white/[0.06] pb-4">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Passo 1 de 2</span>
+                        <h2 class="text-lg font-bold text-white">Cadastro Profissional</h2>
+                    </div>
+                    <button onclick="showAuthStep('welcome')" class="text-xs font-medium text-zinc-400 hover:text-white bg-zinc-900 px-3 py-1.5 rounded-lg border border-white/[0.06]">← Voltar</button>
+                </div>
+
+                <form onsubmit="handleRegister(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-zinc-300 mb-1.5">Nome Profissional ou Razão Social *</label>
+                        <input id="reg-name" type="text" required placeholder="Ex: Silva Engenharia & Elétrica" class="input-pro w-full rounded-xl px-4 py-3 text-sm text-white outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-zinc-300 mb-1.5">WhatsApp Comercial *</label>
+                        <input id="reg-phone" type="tel" required placeholder="(95) 99123-4567" class="input-pro w-full rounded-xl px-4 py-3 text-sm text-white outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-zinc-300 mb-1.5">E-mail Corporativo / Acesso *</label>
+                        <input id="reg-email" type="email" required placeholder="contato@suaempresa.com.br" class="input-pro w-full rounded-xl px-4 py-3 text-sm text-white outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-zinc-300 mb-1.5">Senha de Acesso *</label>
+                        <input id="reg-pass" type="password" required minlength="4" placeholder="Crie uma senha segura" class="input-pro w-full rounded-xl px-4 py-3 text-sm text-white outline-none">
+                    </div>
+                    <button type="submit" class="w-full btn-emerald text-zinc-950 font-bold py-4 rounded-xl text-sm mt-2">
+                        Avançar para Ativação (R$ 19,90) →
+                    </button>
+                </form>
+                <p class="text-center text-xs text-zinc-400 pt-1">
+                    Já possui conta? <button type="button" onclick="showAuthStep('login')" class="text-emerald-400 font-semibold hover:underline">Fazer Login</button>
+                </p>
+            </div>
+
+            <!-- 3. TELA DE LOGIN -->
+            <div id="gate-login" class="hidden glass-panel rounded-3xl p-6 sm:p-8 space-y-5 animate-enter">
+                <div class="flex items-center justify-between border-b border-white/[0.06] pb-4">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Área do Assinante</span>
+                        <h2 class="text-lg font-bold text-white">Autenticação</h2>
+                    </div>
+                    <button onclick="showAuthStep('welcome')" class="text-xs font-medium text-zinc-400 hover:text-white bg-zinc-900 px-3 py-1.5 rounded-lg border border-white/[0.06]">← Voltar</button>
+                </div>
+
+                <form onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-zinc-300 mb-1.5">E-mail Cadastrado</label>
+                        <input id="login-email" type="email" required placeholder="seu@email.com" class="input-pro w-full rounded-xl px-4 py-3 text-sm text-white outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-zinc-300 mb-1.5">Senha</label>
+                        <input id="login-pass" type="password" required placeholder="••••••••" class="input-pro w-full rounded-xl px-4 py-3 text-sm text-white outline-none">
+                    </div>
+                    <button type="submit" class="w-full btn-emerald text-zinc-950 font-bold py-4 rounded-xl text-sm mt-2">
+                        Acessar Meu Escritório
+                    </button>
+                </form>
+                <p class="text-center text-xs text-zinc-400 pt-1">
+                    Ainda não tem licença? <button type="button" onclick="showAuthStep('register')" class="text-emerald-400 font-semibold hover:underline">Criar conta</button>
+                </p>
+            </div>
+
+            <!-- 4. CHECKOUT / ATIVAÇÃO DE ASSINATURA (R$ 19,90/mês) -->
+            <div id="gate-paywall" class="hidden glass-panel rounded-3xl p-6 sm:p-8 space-y-5 border border-emerald-500/30 animate-enter">
+                <div class="flex items-center justify-between border-b border-white/[0.06] pb-4">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Passo 2 de 2 · Ativação
+                        </span>
+                        <h2 id="paywall-user-greeting" class="text-lg font-bold text-white mt-0.5">Olá, Assinante!</h2>
+                    </div>
+                    <button onclick="logoutUser()" class="text-xs font-medium text-zinc-400 hover:text-rose-400 bg-zinc-900 px-3 py-1.5 rounded-lg border border-white/[0.06]">Sair</button>
+                </div>
+
+                <div class="bg-zinc-950/90 rounded-2xl p-4 border border-white/[0.06] flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-semibold text-white block">Plano Mensal Pro</span>
+                        <span class="text-[11px] text-zinc-400">30 dias de acesso irrestrito</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-2xl font-extrabold text-emerald-400 font-mono-tabular">R$ 19,90</span>
+                    </div>
+                </div>
+
+                <!-- QR Code Pix -->
+                <div class="space-y-3 text-center bg-zinc-950/50 p-4 rounded-2xl border border-white/[0.04]">
+                    <p class="text-xs text-zinc-300 font-medium">Escaneie o QR Code no aplicativo do seu banco</p>
+                    <div class="bg-white p-3 rounded-2xl inline-block mx-auto shadow-xl">
+                        <img id="pix-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=09090b&data=f1a6375c-12d6-4794-87f8-53720135f296" alt="QR Code Pix" class="w-36 h-36 rounded-lg">
+                    </div>
+
+                    <div class="text-left space-y-1.5 pt-1">
+                        <label class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Ou copie a Chave Pix (R$ 19,90)</label>
+                        <div class="flex gap-2">
+                            <input id="owner-pix-key" type="text" readonly value="f1a6375c-12d6-4794-87f8-53720135f296" class="input-pro w-full rounded-xl px-3.5 py-2.5 text-xs font-mono-tabular text-zinc-300 outline-none">
+                            <button onclick="copyOwnerPix()" class="bg-zinc-800 hover:bg-zinc-700 border border-white/[0.08] text-white px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">
+                                Copiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de Confirmação -->
+                <div class="space-y-2.5 pt-1">
+                    <a id="send-receipt-wa" href="#" target="_blank" class="flex items-center justify-center gap-2 w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold py-3.5 rounded-xl text-xs transition">
+                        <span>1º Enviar Comprovante no WhatsApp</span>
+                    </a>
+                    <button onclick="confirmSubscriptionPayment()" class="w-full btn-emerald text-zinc-950 font-bold py-4 rounded-xl text-xs">
+                        2º Confirmar Pagamento e Liberar Sistema
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Rodapé Discreto -->
+        <div class="max-w-lg w-full mx-auto text-center text-[11px] text-zinc-600">
+            ZapOrça Pro © 2026 · Tecnologia para Prestadores de Serviço
+        </div>
+    </div>
+
+    <!-- =========================================================
+         ESPAÇO DE TRABALHO PRINCIPAL (WORKSPACE PRO)
+         ========================================================= -->
+    <div id="main-app" class="hidden flex-col flex-grow pb-24">
+        
+        <!-- Header Corporativo -->
+        <header class="sticky top-0 z-40 bg-[#060608]/90 backdrop-blur-xl border-b border-white/[0.07]">
+            <div class="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-zinc-950 shadow-md shadow-emerald-500/20">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <div>
+                        <span class="font-extrabold text-sm text-white block leading-none">ZapOrça <span class="text-emerald-400 text-[10px] font-mono-tabular uppercase">Pro</span></span>
+                        <span id="header-user-name" class="text-[11px] text-zinc-400 block mt-1 truncate max-w-[160px] sm:max-w-[240px]">Empresa Ativa</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Licença Ativa
+                    </span>
+                    <button onclick="logoutUser()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-900 border border-white/[0.08] text-zinc-400 hover:text-rose-400 transition">
+                        Sair
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Conteúdo Principal -->
+        <main class="flex-grow max-w-2xl w-full mx-auto px-4 pt-6 space-y-6">
+            
+            <!-- Navegação por Abas -->
+            <div class="grid grid-cols-3 gap-1.5 p-1.5 bg-zinc-900/90 border border-white/[0.07] rounded-2xl">
+                <button id="tab-criar" onclick="switchTab('criar')" class="py-2.5 rounded-xl text-xs font-bold bg-zinc-800 text-white shadow-sm transition">
+                    Novo Orçamento
+                </button>
+                <button id="tab-historico" onclick="switchTab('historico')" class="py-2.5 rounded-xl text-xs font-medium text-zinc-400 hover:text-white transition">
+                    Histórico (<span id="history-badge">0</span>)
+                </button>
+                <button id="tab-empresa" onclick="switchTab('empresa')" class="py-2.5 rounded-xl text-xs font-medium text-zinc-400 hover:text-white transition">
+                    Minha Empresa
+                </button>
+            </div>
+
+            <!-- ABA 1: CRIAR ORÇAMENTO PROFISSIONAL -->
+            <section id="view-criar" class="space-y-5 animate-enter">
+                
+                <!-- Card Dados do Cliente -->
+                <div class="glass-panel rounded-3xl p-5 sm:p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-white/[0.06] pb-3">
+                        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            1. Identificação do Cliente
+                        </h2>
+                        <span class="text-[11px] font-mono-tabular text-zinc-500" id="preview-code">#ORC-001</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-zinc-400 mb-1.5">Nome do Cliente ou Empresa *</label>
+                            <input id="client-name" type="text" placeholder="Ex: Condomínio Solar das Flores" class="input-pro w-full rounded-xl px-3.5 py-2.5 text-sm text-white outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-zinc-400 mb-1.5">WhatsApp do Cliente (com DDD)</label>
+                            <input id="client-phone" type="tel" placeholder="95991234567" class="input-pro w-full rounded-xl px-3.5 py-2.5 text-sm text-white outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Itens e Serviços -->
+                <div class="glass-panel rounded-3xl p-5 sm:p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-white/[0.06] pb-3">
+                        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            2. Escopo de Serviços e Materiais
+                        </h2>
+                        <button type="button" onclick="addItemRow()" class="text-xs font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg transition">
+                            + Adicionar Item
+                        </button>
+                    </div>
+
+                    <div id="items-container" class="space-y-3">
+                        <!-- Itens dinâmicos inseridos via JS -->
+                    </div>
+
+                    <!-- Resumo Financeiro e Desconto -->
+                    <div class="pt-4 border-t border-white/[0.06] space-y-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-zinc-400">Subtotal dos itens</span>
+                            <span id="subtotal-display" class="font-mono-tabular font-semibold text-zinc-300">R$ 0,00</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-4">
+                            <label for="quote-discount" class="text-xs text-zinc-400">Desconto Comercial (R$)</label>
+                            <input id="quote-discount" type="number" min="0" step="0.01" placeholder="0,00" oninput="calculateTotal()" class="input-pro w-32 rounded-xl px-3 py-1.5 text-xs font-mono-tabular text-right text-amber-400 outline-none">
+                        </div>
+                        <div class="bg-zinc-950/90 border border-emerald-500/20 rounded-2xl p-4 flex items-center justify-between">
+                            <div>
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block">Valor Total da Proposta</span>
+                                <span class="text-[10px] text-zinc-500">Pronto para envio imediato</span>
+                            </div>
+                            <span id="total-display" class="text-2xl font-extrabold text-emerald-400 font-mono-tabular">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Condições e Garantia -->
+                <div class="glass-panel rounded-3xl p-5 sm:p-6 space-y-3">
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        3. Prazos, Garantia e Observações
+                    </h2>
+                    <textarea id="quote-notes" rows="2" placeholder="Ex: Validade da proposta: 7 dias. Garantia de 90 dias sobre a mão de obra executada. Pagamento via Pix ou cartão." class="input-pro w-full rounded-xl p-3.5 text-xs text-zinc-200 outline-none resize-none">Validade da proposta: 7 dias. Garantia de 90 dias sobre os serviços executados.</textarea>
+                </div>
+
+                <!-- Botões de Ação Principal -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <button type="button" onclick="generateQuote('pdf')" class="bg-zinc-900 hover:bg-zinc-800 border border-white/[0.1] text-white font-bold py-4 rounded-2xl text-xs flex items-center justify-center gap-2 transition">
+                        <svg class="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span>Visualizar & Baixar PDF</span>
+                    </button>
+                    <button type="button" onclick="generateQuote('wa')" class="btn-emerald text-zinc-950 font-bold py-4 rounded-2xl text-xs flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824z"/></svg>
+                        <span>Enviar Proposta no WhatsApp</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- ABA 2: HISTÓRICO DE ORÇAMENTOS -->
+            <section id="view-historico" class="hidden space-y-4 animate-enter">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="glass-panel rounded-2xl p-4">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Propostas Emitidas</span>
+                        <span id="stat-count" class="text-2xl font-extrabold text-white font-mono-tabular mt-1 block">0</span>
+                    </div>
+                    <div class="glass-panel rounded-2xl p-4">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Volume Orçado</span>
+                        <span id="stat-volume" class="text-xl font-extrabold text-emerald-400 font-mono-tabular mt-1 block">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <div id="history-list" class="space-y-3">
+                    <div class="glass-panel rounded-3xl p-10 text-center space-y-2">
+                        <p class="text-sm font-semibold text-zinc-300">Nenhum orçamento emitido ainda</p>
+                        <p class="text-xs text-zinc-500">As propostas que você gerar ficarão salvas aqui para reenvio rápido.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 3: IDENTIDADE DA EMPRESA -->
+            <section id="view-empresa" class="hidden space-y-5 animate-enter">
+                <div class="glass-panel rounded-3xl p-6 space-y-4">
+                    <div class="border-b border-white/[0.06] pb-3">
+                        <h2 class="text-base font-bold text-white">Cabeçalho do Seu Orçamento</h2>
+                        <p class="text-xs text-zinc-400 mt-0.5">Esses dados aparecem no topo do PDF e no rodapé da mensagem do WhatsApp.</p>
+                    </div>
+
+                    <div class="space-y-3.5">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-zinc-300 mb-1.5">Nome da Empresa / Profissional</label>
+                            <input id="biz-name" type="text" placeholder="Ex: Silva Climatização & Elétrica" class="input-pro w-full rounded-xl px-3.5 py-2.5 text-sm text-white outline-none">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-zinc-300 mb-1.5">CNPJ ou CPF (Opcional)</label>
+                                <input id="biz-doc" type="text" placeholder="00.000.000/0001-00" class="input-pro w-full rounded-xl px-3.5 py-2.5 text-sm text-white outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-zinc-300 mb-1.5">Telefone Comercial</label>
+                                <input id="biz-phone" type="text" placeholder="(95) 99123-4567" class="input-pro w-full rounded-xl px-3.5 py-2.5 text-sm text-white outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-zinc-300 mb-1.5">Sua Chave Pix para Recebimento</label>
+                            <input id="biz-pix" type="text" placeholder="CPF, E-mail, Telefone ou Chave Aleatória" class="input-pro w-full rounded-xl px-3.5 py-2.5 text-sm text-emerald-400 font-mono-tabular outline-none">
+                        </div>
+                        <button type="button" onclick="saveBusinessProfile()" class="w-full btn-emerald text-zinc-950 font-bold py-3.5 rounded-xl text-xs mt-2">
+                            Salvar Identidade Comercial
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- MODAL DE VISUALIZAÇÃO E DOWNLOAD DO PDF TIMBRADO -->
+        <div id="pdf-modal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <div class="bg-zinc-900 border border-zinc-700 rounded-3xl max-w-lg w-full p-5 space-y-4 shadow-2xl my-auto">
+                <div class="flex items-center justify-between no-print">
+                    <span class="text-xs font-bold uppercase tracking-wider text-zinc-400">Pré-visualização do Documento</span>
+                    <button onclick="closePdfModal()" class="text-zinc-400 hover:text-white bg-zinc-800 w-7 h-7 rounded-full flex items-center justify-center text-xs">✕</button>
+                </div>
+
+                <!-- Folha A4 Branca para Impressão/PDF -->
+                <div id="printable-area" class="bg-white text-zinc-900 rounded-2xl p-6 sm:p-8 shadow-inner space-y-6">
+                    <div class="flex justify-between items-start border-b-2 border-zinc-900 pb-4">
+                        <div>
+                            <h3 id="pdf-biz-name" class="text-lg font-extrabold uppercase tracking-tight text-zinc-950">ORÇAMENTO COMERCIAL</h3>
+                            <p id="pdf-biz-meta" class="text-[11px] text-zinc-500 mt-0.5"></p>
+                        </div>
+                        <div class="text-right">
+                            <span id="pdf-code" class="text-xs font-bold font-mono-tabular bg-zinc-100 px-2.5 py-1 rounded text-zinc-900">#ORC-001</span>
+                            <p id="pdf-date" class="text-[11px] text-zinc-500 mt-1">00/00/0000</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Cliente / Destinatário</span>
+                        <p id="pdf-client-name" class="text-sm font-bold text-zinc-900 mt-0.5">Nome do Cliente</p>
+                    </div>
+
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-zinc-300 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                                <th class="py-2">Descrição do Serviço / Material</th>
+                                <th class="py-2 text-center">Qtd</th>
+                                <th class="py-2 text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pdf-items-body" class="divide-y divide-zinc-200 text-xs text-zinc-800">
+                        </tbody>
+                    </table>
+
+                    <div class="border-t-2 border-zinc-900 pt-3 flex justify-between items-center">
+                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-600">Investimento Total</span>
+                        <span id="pdf-total" class="text-xl font-extrabold text-zinc-950 font-mono-tabular">R$ 0,00</span>
+                    </div>
+
+                    <div class="space-y-2 pt-2 border-t border-zinc-200 text-[11px] text-zinc-600">
+                        <p id="pdf-notes" class="leading-relaxed"></p>
+                        <p id="pdf-pix-info" class="font-bold text-zinc-900 font-mono-tabular pt-1"></p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5 no-print">
+                    <button onclick="window.print()" class="bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-3 rounded-xl text-xs transition">
+                        Imprimir Folha
+                    </button>
+                    <button onclick="downloadRealPDF()" class="btn-emerald text-zinc-950 font-bold py-3 rounded-xl text-xs">
+                        Baixar Arquivo PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL WHATSAPP -->
+        <div id="wa-modal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="glass-panel rounded-3xl max-w-md w-full p-6 space-y-4 border border-zinc-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-bold text-white">Proposta Formatada para WhatsApp</h3>
+                    <button onclick="closeWaModal()" class="text-zinc-400 hover:text-white text-xs">✕</button>
+                </div>
+                <textarea id="wa-preview-text" rows="7" readonly class="input-pro w-full rounded-xl p-3.5 text-xs text-zinc-200 font-mono-tabular outline-none resize-none"></textarea>
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button onclick="closeWaModal()" class="bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-3 rounded-xl text-xs">Fechar</button>
+                    <a id="wa-direct-link" href="#" target="_blank" onclick="closeWaModal()" class="btn-emerald text-zinc-950 font-bold py-3 rounded-xl text-xs text-center flex items-center justify-center">
+                        Abrir WhatsApp →
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // CONFIGURAÇÃO DO DONO DO SAAS (RECEBIMENTO DAS ASSINATURAS DE R$ 19,90)
+        const OWNER_CONFIG = {
+            pixKey: "f1a6375c-12d6-4794-87f8-53720135f296",
+            whatsapp: "5595991281132",
+            monthlyPrice: "19,90"
+        };
+
+        let state = {
+            users: JSON.parse(localStorage.getItem('zaporca_users') || '[]'),
+            currentUserEmail: localStorage.getItem('zaporca_session_email') || null,
+            history: JSON.parse(localStorage.getItem('zaporca_history') || '[]'),
+            business: JSON.parse(localStorage.getItem('zaporca_biz') || '{"name":"","doc":"","phone":"","pix":""}')
+        };
+
+        window.onload = () => {
+            document.getElementById('owner-pix-key').value = OWNER_CONFIG.pixKey;
+            addItemRow("Mão de obra técnica especializada", 1, 180);
+            checkAccessControl();
+        };
+
+        // --- CONTROLE DE ACESSO E AUTENTICAÇÃO ---
+        function getCurrentUser() {
+            if (!state.currentUserEmail) return null;
+            return state.users.find(u => u.email === state.currentUserEmail) || null;
+        }
+
+        function checkAccessControl() {
+            const user = getCurrentUser();
+            const authGate = document.getElementById('auth-gate');
+            const mainApp = document.getElementById('main-app');
+
+            if (!user) {
+                mainApp.classList.add('hidden');
+                mainApp.classList.remove('flex');
+                authGate.classList.remove('hidden');
+                showAuthStep('welcome');
+                return;
+            }
+
+            const isSubValid = user.subscribed && user.expiresAt && Date.now() < user.expiresAt;
+
+            if (!isSubValid) {
+                mainApp.classList.add('hidden');
+                mainApp.classList.remove('flex');
+                authGate.classList.remove('hidden');
+                document.getElementById('paywall-user-greeting').textContent = `Olá, ${user.name}!`;
+                
+                const receiptMsg = encodeURIComponent(`Olá! Criei minha conta no ZapOrça Pro (${user.email}) e realizei o Pix de R$ ${OWNER_CONFIG.monthlyPrice} para ativar minha licença mensal.`);
+                document.getElementById('send-receipt-wa').href = `https://api.whatsapp.com/send?phone=${OWNER_CONFIG.whatsapp}&text=${receiptMsg}`;
+                
+                showAuthStep('paywall');
+                return;
+            }
+
+            authGate.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+            mainApp.classList.add('flex');
+            document.getElementById('header-user-name').textContent = state.business.name || user.name;
+            
+            if (!state.business.name) {
+                state.business.name = user.name;
+                state.business.phone = user.phone;
+            }
+            loadBusinessProfile();
+            renderHistory();
+            updateNextQuoteCode();
+        }
+
+        function showAuthStep(step) {
+            ['welcome', 'register', 'login', 'paywall'].forEach(s => {
+                document.getElementById(`gate-${s}`).classList.add('hidden');
+            });
+            document.getElementById(`gate-${step}`).classList.remove('hidden');
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value.trim();
+            const phone = document.getElementById('reg-phone').value.trim();
+            const email = document.getElementById('reg-email').value.trim().toLowerCase();
+            const pass = document.getElementById('reg-pass').value;
+
+            if (state.users.some(u => u.email === email)) {
+                showToast("Este e-mail já possui cadastro. Faça login.");
+                showAuthStep('login');
+                return;
+            }
+
+            const newUser = {
+                name,
+                phone,
+                email,
+                pass,
+                subscribed: false,
+                expiresAt: null,
+                createdAt: Date.now()
+            };
+
+            state.users.push(newUser);
+            state.currentUserEmail = email;
+            localStorage.setItem('zaporca_users', JSON.stringify(state.users));
+            localStorage.setItem('zaporca_session_email', email);
+
+            showToast("Cadastro criado! Conclua a assinatura mensal.");
+            checkAccessControl();
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
+            const pass = document.getElementById('login-pass').value;
+
+            const user = state.users.find(u => u.email === email && u.pass === pass);
+            if (!user) {
+                showToast("Credenciais inválidas. Verifique e-mail e senha.");
+                return;
+            }
+
+            state.currentUserEmail = email;
+            localStorage.setItem('zaporca_session_email', email);
+            showToast(`Bem-vindo de volta, ${user.name}!`);
+            checkAccessControl();
+        }
+
+        function logoutUser() {
+            state.currentUserEmail = null;
+            localStorage.removeItem('zaporca_session_email');
+            showToast("Sessão encerrada com segurança.");
+            checkAccessControl();
+        }
+
+        function copyOwnerPix() {
+            const input = document.getElementById('owner-pix-key');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+            showToast("Chave Pix copiada! Valor: R$ 19,90");
+        }
+
+        function confirmSubscriptionPayment() {
+            const userIndex = state.users.findIndex(u => u.email === state.currentUserEmail);
+            if (userIndex === -1) return;
+
+            const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+            state.users[userIndex].subscribed = true;
+            state.users[userIndex].expiresAt = Date.now() + thirtyDaysMs;
+
+            localStorage.setItem('zaporca_users', JSON.stringify(state.users));
+            showToast("Licença Pro ativada por 30 dias!");
+            checkAccessControl();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3200);
+        }
+
+        // --- NAVEGAÇÃO DO WORKSPACE ---
+        function switchTab(tab) {
+            ['criar', 'historico', 'empresa'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = "py-2.5 rounded-xl text-xs font-medium text-zinc-400 hover:text-white transition";
+            });
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).className = "py-2.5 rounded-xl text-xs font-bold bg-zinc-800 text-white shadow-sm transition";
+        }
+
+        function updateNextQuoteCode() {
+            const nextNum = String(state.history.length + 1).padStart(3, '0');
+            document.getElementById('preview-code').textContent = `#ORC-${nextNum}`;
+        }
+
+        // --- MOTOR DE ORÇAMENTOS ---
+        function addItemRow(desc = "", qty = 1, price = "") {
+            const container = document.getElementById('items-container');
+            const row = document.createElement('div');
+            row.className = "item-row bg-zinc-950/90 p-3.5 rounded-2xl border border-white/[0.06] space-y-2.5";
+            row.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <input type="text" placeholder="Descrição do serviço ou material..." value="${desc}" class="item-desc w-full bg-transparent text-sm font-medium text-white outline-none">
+                    <button type="button" onclick="this.closest('.item-row').remove(); calculateTotal();" class="text-zinc-500 hover:text-rose-400 p-1 text-xs transition" title="Remover item">✕</button>
+                </div>
+                <div class="grid grid-cols-2 gap-3 pt-2 border-t border-white/[0.04]">
+                    <div>
+                        <span class="text-[10px] text-zinc-500 uppercase font-semibold block mb-1">Quantidade</span>
+                        <input type="number" value="${qty}" min="1" oninput="calculateTotal()" class="item-qty bg-zinc-900 border border-white/[0.05] w-full px-3 py-1.5 rounded-lg text-xs font-mono-tabular text-white outline-none">
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-zinc-500 uppercase font-semibold block mb-1 text-right">Valor Unitário (R$)</span>
+                        <input type="number" placeholder="0,00" value="${price}" min="0" step="0.01" oninput="calculateTotal()" class="item-price bg-zinc-900 border border-white/[0.05] w-full px-3 py-1.5 rounded-lg text-xs font-mono-tabular text-emerald-400 outline-none text-right">
+                    </div>
+                </div>
+            `;
+            container.appendChild(row);
+            calculateTotal();
+        }
+
+        function calculateTotal() {
+            let subtotal = 0;
+            document.querySelectorAll('.item-row').forEach(row => {
+                const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                subtotal += qty * price;
+            });
+            const discount = parseFloat(document.getElementById('quote-discount').value) || 0;
+            const total = Math.max(0, subtotal - discount);
+
+            document.getElementById('subtotal-display').textContent = subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('total-display').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            return { subtotal, discount, total };
+        }
+
+        function generateQuote(mode) {
+            const user = getCurrentUser();
+            if (!user || !user.subscribed) {
+                checkAccessControl();
+                return;
+            }
+
+            const clientName = document.getElementById('client-name').value.trim();
+            if (!clientName) {
+                showToast("Informe o nome do cliente para gerar a proposta.");
+                document.getElementById('client-name').focus();
+                return;
+            }
+
+            const items = [];
+            document.querySelectorAll('.item-row').forEach(row => {
+                const desc = row.querySelector('.item-desc').value.trim();
+                const qty = parseFloat(row.querySelector('.item-qty').value) || 1;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                if (desc) items.push({ desc, qty, price, total: qty * price });
+            });
+
+            if (items.length === 0) {
+                showToast("Adicione pelo menos um serviço ou material.");
+                return;
+            }
+
+            const { subtotal, discount, total } = calculateTotal();
+            const code = `#ORC-${String(state.history.length + 1).padStart(3, '0')}`;
+            const date = new Date().toLocaleDateString('pt-BR');
+            const notes = document.getElementById('quote-notes').value.trim();
+            const clientPhone = document.getElementById('client-phone').value.replace(/\D/g, '');
+
+            const quoteObj = { code, date, clientName, clientPhone, items, subtotal, discount, total, notes };
+            state.history.unshift(quoteObj);
+
+            localStorage.setItem('zaporca_history', JSON.stringify(state.history));
+            renderHistory();
+            updateNextQuoteCode();
+
+            if (mode === 'pdf') {
+                openPdfModal(quoteObj);
+            } else {
+                sendToWhatsApp(quoteObj);
+            }
+        }
+
+        function sendToWhatsApp(q) {
+            const bizName = state.business.name ? `*${state.business.name.toUpperCase()}*\n` : "";
+            let text = `${bizName}📄 *PROPOSTA COMERCIAL (${q.code})*\nData: ${q.date}\nCliente: *${q.clientName}*\n\n*DETALHAMENTO DOS SERVIÇOS:*\n`;
+            q.items.forEach(i => {
+                text += `▪ ${i.qty}x ${i.desc} — R$ ${i.total.toFixed(2).replace('.', ',')}\n`;
+            });
+            if (q.discount > 0) {
+                text += `\nDesconto aplicado: - R$ ${q.discount.toFixed(2).replace('.', ',')}`;
+            }
+            text += `\n💰 *INVESTIMENTO TOTAL: R$ ${q.total.toFixed(2).replace('.', ',')}*\n`;
+            if (q.notes) text += `\n📌 _${q.notes}_\n`;
+            if (state.business.pix) text += `\n🔑 *Chave Pix para pagamento:*\n${state.business.pix}`;
+
+            const phoneParam = q.clientPhone ? `55${q.clientPhone}` : "";
+            const waUrl = `https://api.whatsapp.com/send?phone=${phoneParam}&text=${encodeURIComponent(text)}`;
+
+            document.getElementById('wa-preview-text').value = text;
+            document.getElementById('wa-direct-link').href = waUrl;
+            document.getElementById('wa-modal').classList.remove('hidden');
+        }
+
+        function closeWaModal() { document.getElementById('wa-modal').classList.add('hidden'); }
+
+        function openPdfModal(q) {
+            document.getElementById('pdf-biz-name').textContent = state.business.name || "PROPOSTA COMERCIAL";
+            const metaParts = [];
+            if (state.business.doc) metaParts.push(`Doc: ${state.business.doc}`);
+            if (state.business.phone) metaParts.push(`Tel: ${state.business.phone}`);
+            document.getElementById('pdf-biz-meta').textContent = metaParts.join(' · ');
+
+            document.getElementById('pdf-code').textContent = q.code;
+            document.getElementById('pdf-date').textContent = q.date;
+            document.getElementById('pdf-client-name').textContent = q.clientName;
+            document.getElementById('pdf-items-body').innerHTML = q.items.map(i => `
+                <tr>
+                    <td class="py-2.5 pr-2 font-medium">${i.desc}</td>
+                    <td class="py-2.5 text-center font-mono-tabular">${i.qty}</td>
+                    <td class="py-2.5 text-right font-bold font-mono-tabular">R$ ${i.total.toFixed(2).replace('.', ',')}</td>
+                </tr>
+            `).join('');
+            document.getElementById('pdf-total').textContent = q.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('pdf-notes').textContent = q.notes;
+            document.getElementById('pdf-pix-info').textContent = state.business.pix ? `Chave Pix para Pagamento: ${state.business.pix}` : "";
+            document.getElementById('pdf-modal').classList.remove('hidden');
+        }
+
+        function closePdfModal() { document.getElementById('pdf-modal').classList.add('hidden'); }
+
+        function downloadRealPDF() {
+            const element = document.getElementById('printable-area');
+            const opt = {
+                margin: 10,
+                filename: `Proposta_${document.getElementById('pdf-code').textContent.replace('#', '')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+            showToast("Gerando arquivo PDF...");
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            document.getElementById('history-badge').textContent = state.history.length;
+            document.getElementById('stat-count').textContent = state.history.length;
+
+            const totalVolume = state.history.reduce((acc, item) => acc + (item.total || 0), 0);
+            document.getElementById('stat-volume').textContent = totalVolume.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            if (state.history.length === 0) return;
+            list.innerHTML = state.history.map((q, index) => `
+                <div class="glass-panel p-4 rounded-2xl flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-bold font-mono-tabular text-emerald-400">${q.code}</span>
+                            <span class="text-[10px] text-zinc-500">· ${q.date}</span>
+                        </div>
+                        <h4 class="font-bold text-sm text-white truncate mt-0.5">${q.clientName}</h4>
+                        <span class="text-xs font-mono-tabular font-semibold text-zinc-300 block mt-0.5">R$ ${q.total.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                    <div class="flex gap-2 shrink-0">
+                        <button onclick='openPdfModal(state.history[${index}])' class="bg-zinc-800 hover:bg-zinc-700 border border-white/[0.06] text-white px-3 py-2 rounded-xl text-xs font-semibold transition">PDF</button>
+                        <button onclick='sendToWhatsApp(state.history[${index}])' class="btn-emerald text-zinc-950 font-bold px-3 py-2 rounded-xl text-xs">WhatsApp</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function saveBusinessProfile() {
+            state.business = {
+                name: document.getElementById('biz-name').value.trim(),
+                doc: document.getElementById('biz-doc').value.trim(),
+                phone: document.getElementById('biz-phone').value.trim(),
+                pix: document.getElementById('biz-pix').value.trim()
+            };
+            localStorage.setItem('zaporca_biz', JSON.stringify(state.business));
+            document.getElementById('header-user-name').textContent = state.business.name || getCurrentUser()?.name || "Empresa Ativa";
+            showToast("Identidade da empresa atualizada!");
+        }
+
+        function loadBusinessProfile() {
+            document.getElementById('biz-name').value = state.business.name || "";
+            document.getElementById('biz-doc').value = state.business.doc || "";
+            document.getElementById('biz-phone').value = state.business.phone || "";
+            document.getElementById('biz-pix').value = state.business.pix || "";
+        }
+    </script>
+</body>
+</html>
+```
